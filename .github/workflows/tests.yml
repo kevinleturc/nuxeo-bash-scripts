@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install bats
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y bats
+    
+    - name: Verify bats installation
+      run: bats --version
+    
+    - name: Run tests
+      run: |
+        cd tests
+        ./run_tests.sh
+    
+    - name: Test results
+      if: always()
+      run: |
+        if [ $? -eq 0 ]; then
+          echo "✓ All tests passed"
+        else
+          echo "✗ Some tests failed"
+          exit 1
+        fi

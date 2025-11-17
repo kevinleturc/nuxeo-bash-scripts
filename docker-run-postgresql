@@ -1,0 +1,222 @@
+#!/bin/bash
+
+# PostgreSQL Database Script for Nuxeo Development
+# This script manages a PostgreSQL Docker container for Nuxeo development
+
+set -e
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source common library
+source "${SCRIPT_DIR}/lib/common.sh"
+
+# Default configuration
+CONTAINER_NAME="nuxeo-postgresql-dev"
+DB_PORT="5432"
+DB_NAME="nuxeo"
+DB_USER="nuxeo"
+DB_PASSWORD="nuxeo"
+POSTGRES_VERSION="14"
+VOLUME_NAME="nuxeo-postgresql-data"
+FOLLOW_LOGS="true"
+
+# Parse options
+parse_options() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --container-name)
+                CONTAINER_NAME="$2"
+                shift 2
+                ;;
+            --port)
+                DB_PORT="$2"
+                shift 2
+                ;;
+            --name)
+                DB_NAME="$2"
+                shift 2
+                ;;
+            --user)
+                DB_USER="$2"
+                shift 2
+                ;;
+            --password)
+                DB_PASSWORD="$2"
+                shift 2
+                ;;
+            --version)
+                POSTGRES_VERSION="$2"
+                shift 2
+                ;;
+            --volume-name)
+                VOLUME_NAME="$2"
+                shift 2
+                ;;
+            --debug)
+                DEBUG="true"
+                shift
+                ;;
+            --no-follow)
+                FOLLOW_LOGS="false"
+                shift
+                ;;
+            start|stop|restart|status|clean|logs|help|--help|-h)
+                # Command found, return to process it
+                return 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+}
+
+# Function to start PostgreSQL
+start_postgresql() {
+    check_docker
+    
+    if container_running "$CONTAINER_NAME"; then
+        print_warn "PostgreSQL container '${CONTAINER_NAME}' is already running."
+        return 0
+    fi
+    
+    if container_exists "$CONTAINER_NAME"; then
+        print_info "Starting existing PostgreSQL container '${CONTAINER_NAME}'..."
+        docker start "${CONTAINER_NAME}"
+    else
+        print_info "Creating and starting new PostgreSQL container '${CONTAINER_NAME}'..."
+        docker run -d \
+            --name "${CONTAINER_NAME}" \
+            -p "${DB_PORT}:5432" \
+            -e POSTGRES_DB="${DB_NAME}" \
+            -e POSTGRES_USER="${DB_USER}" \
+            -e POSTGRES_PASSWORD="${DB_PASSWORD}" \
+            -v "${VOLUME_NAME}:/var/lib/postgresql/data" \
+            "postgres:${POSTGRES_VERSION}"
+    fi
+    
+    # Wait for PostgreSQL to be ready
+    wait_for_container "PostgreSQL" \
+        "docker exec ${CONTAINER_NAME} pg_isready -U ${DB_USER}"
+    
+    # Print connection details
+    print_connection_details \
+        "Host: localhost" \
+        "Port: ${DB_PORT}" \
+        "Database: ${DB_NAME}" \
+        "User: ${DB_USER}" \
+        "Password: ${DB_PASSWORD}" \
+        "JDBC URL: jdbc:postgresql://localhost:${DB_PORT}/${DB_NAME}"
+}
+
+# Function to stop PostgreSQL
+stop_postgresql() {
+    stop_container "$CONTAINER_NAME" "PostgreSQL"
+}
+
+# Function to restart PostgreSQL
+restart_postgresql() {
+    stop_postgresql
+    start_postgresql
+}
+
+# Function to show status
+show_status() {
+    show_container_status "$CONTAINER_NAME" "PostgreSQL"
+}
+
+# Function to clean up (remove container and volume)
+clean_postgresql() {
+    clean_container "$CONTAINER_NAME" "$VOLUME_NAME" "PostgreSQL"
+}
+
+# Function to show logs
+show_logs() {
+    show_container_logs "$CONTAINER_NAME" "PostgreSQL" "$FOLLOW_LOGS"
+}
+
+# Function to show help
+show_help() {
+    echo "PostgreSQL Database Script for Nuxeo Development"
+    echo ""
+    echo "Usage: $0 [OPTIONS] {start|stop|restart|status|clean|logs|help}"
+    echo ""
+    echo "Commands:"
+    echo "  start    - Start PostgreSQL container"
+    echo "  stop     - Stop PostgreSQL container"
+    echo "  restart  - Restart PostgreSQL container"
+    echo "  status   - Show container status"
+    echo "  clean    - Remove container and data volume"
+    echo "  logs     - Show container logs (follow mode)"
+    echo "  help     - Show this help message"
+    echo ""
+    echo "Options:"
+    echo "  --container-name NAME  Container name (default: nuxeo-postgresql-dev)"
+    echo "  --port PORT            Host port (default: 5432)"
+    echo "  --name NAME            Database name (default: nuxeo)"
+    echo "  --user USER            Database user (default: nuxeo)"
+    echo "  --password PASS        Database password (default: nuxeo)"
+    echo "  --version VERSION      PostgreSQL version (default: 14)"
+    echo "  --volume-name NAME     Volume name (default: nuxeo-postgresql-data)"
+    echo "  --debug                Enable debug logging"
+    echo "  --no-follow            Don't follow logs (for logs command)"
+    echo ""
+    echo "Examples:"
+    echo "  $0 --port 5433 start"
+    echo "  $0 --name mydb --user myuser --password mypass start"
+    echo "  $0 --debug start"
+}
+
+# Parse options first
+parse_options "$@"
+
+# Find the command
+COMMAND=""
+for arg in "$@"; do
+    case "$arg" in
+        start|stop|restart|status|clean|logs|help|--help|-h)
+            COMMAND="$arg"
+            break
+            ;;
+    esac
+done
+
+# Main script logic
+case "${COMMAND}" in
+    start)
+        start_postgresql
+        ;;
+    stop)
+        stop_postgresql
+        ;;
+    restart)
+        restart_postgresql
+        ;;
+    status)
+        show_status
+        ;;
+    clean)
+        clean_postgresql
+        ;;
+    logs)
+        show_logs
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    "")
+        print_error "No command specified"
+        echo ""
+        show_help
+        exit 1
+        ;;
+    *)
+        print_error "Invalid command: ${COMMAND}"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac
