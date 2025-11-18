@@ -6,10 +6,25 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   test:
-    name: Run Unit Tests
+    name: Test ${{ matrix.test-name }}
     runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        include:
+          - test-name: Common Library
+            test-file: common_test.sh
+          - test-name: MongoDB Script
+            test-file: mongodb_test.sh
+          - test-name: MySQL Script
+            test-file: mysql_test.sh
+          - test-name: PostgreSQL Script
+            test-file: postgresql_test.sh
     
     steps:
     - name: Checkout code
@@ -20,20 +35,5 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y bats
     
-    - name: Verify bats installation
-      run: bats --version
-    
     - name: Run tests
-      run: |
-        cd tests
-        ./run_tests.sh
-    
-    - name: Test results
-      if: always()
-      run: |
-        if [ $? -eq 0 ]; then
-          echo "✓ All tests passed"
-        else
-          echo "✗ Some tests failed"
-          exit 1
-        fi
+      run: bats tests/${{ matrix.test-file }}

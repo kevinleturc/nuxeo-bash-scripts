@@ -37,12 +37,16 @@ cd tests
 ```bash
 bats tests/common_test.sh
 bats tests/mongodb_test.sh
+bats tests/mysql_test.sh
+bats tests/postgresql_test.sh
 ```
 
 ## Test Structure
 
 - **common_test.sh** - Unit tests for lib/common.sh functions
-- **mongodb_test.sh** - Unit tests for mongodb.sh script
+- **mongodb_test.sh** - Unit tests for docker-run-mongodb script
+- **mysql_test.sh** - Unit tests for docker-run-mysql script
+- **postgresql_test.sh** - Unit tests for docker-run-postgresql script
 - **test_helper.bash** - Common test utilities and mocks
 - **run_tests.sh** - Test runner script
 
@@ -64,5 +68,13 @@ Example test:
 Tests run automatically on:
 - Push to main branch
 - Pull requests to main branch
+
+The CI workflow runs tests in parallel for better performance using a matrix strategy. Each test file runs in a separate job:
+- Common Library tests (common_test.sh)
+- MongoDB Script tests (mongodb_test.sh)
+- MySQL Script tests (mysql_test.sh)
+- PostgreSQL Script tests (postgresql_test.sh)
+
+The workflow uses a single job definition with a matrix to factorize common setup steps (checkout and bats installation), reducing duplication while maintaining parallel execution.
 
 See `.github/workflows/tests.yml` for CI configuration.
