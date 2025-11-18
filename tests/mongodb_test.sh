@@ -40,6 +40,7 @@ setup() {
     [[ "$output" == *"status"* ]]
     [[ "$output" == *"clean"* ]]
     [[ "$output" == *"logs"* ]]
+    [[ "$output" == *"console"* ]]
 }
 
 @test "docker-run-mongodb help shows options" {

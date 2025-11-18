@@ -61,7 +61,7 @@ parse_options() {
                 FOLLOW_LOGS="false"
                 shift
                 ;;
-            start|stop|restart|status|clean|logs|help|--help|-h)
+            start|stop|restart|status|clean|logs|console|help|--help|-h)
                 # Command found, return to process it
                 return 0
                 ;;
@@ -138,11 +138,16 @@ show_logs() {
     show_container_logs "$CONTAINER_NAME" "MongoDB" "$FOLLOW_LOGS"
 }
 
+# Function to run console mode (start and follow logs)
+run_console() {
+    run_console_mode start_mongodb "$CONTAINER_NAME" "MongoDB" "$DB_NAME"
+}
+
 # Function to show help
 show_help() {
     echo "MongoDB Database Script for Nuxeo Development"
     echo ""
-    echo "Usage: $0 [OPTIONS] {start|stop|restart|status|clean|logs|help}"
+    echo "Usage: $0 [OPTIONS] {start|stop|restart|status|clean|logs|console|help}"
     echo ""
     echo "Commands:"
     echo "  start    - Start MongoDB container"
@@ -151,6 +156,7 @@ show_help() {
     echo "  status   - Show container status"
     echo "  clean    - Remove container and data volume"
     echo "  logs     - Show container logs (follow mode)"
+    echo "  console  - Start MongoDB and follow logs"
     echo "  help     - Show this help message"
     echo ""
     echo "Options:"
@@ -176,12 +182,10 @@ parse_options "$@"
 # Find the command
 COMMAND=""
 for arg in "$@"; do
-    case "$arg" in
-        start|stop|restart|status|clean|logs|help|--help|-h)
-            COMMAND="$arg"
-            break
-            ;;
-    esac
+    if is_supported_command "$arg"; then
+        COMMAND="$arg"
+        break
+    fi
 done
 
 # Main script logic
@@ -203,6 +207,9 @@ case "${COMMAND}" in
         ;;
     logs)
         show_logs
+        ;;
+    console)
+        run_console
         ;;
     help|--help|-h)
         show_help

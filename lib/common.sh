@@ -137,6 +137,25 @@ show_container_logs() {
     fi
 }
 
+# Function to run console mode (start container and follow logs)
+# Args: $1 - Start function name
+#       $2 - Container name
+#       $3 - Database type name (for display, e.g., "MongoDB", "MySQL", "PostgreSQL")
+#       $4 - Database name (the actual database name)
+run_console_mode() {
+    local start_function="$1"
+    local container_name="$2"
+    local db_type="$3"
+    local db_name="$4"
+    
+    # Start the database (will handle if already running)
+    "$start_function"
+    
+    # Follow the logs
+    print_info "Following ${db_type} logs for database '${db_name}' (Ctrl+C to exit)..."
+    docker logs -f "${container_name}"
+}
+
 # Function to wait for container to be ready
 # Args: $1 - Database name (for display)
 #       $2 - Health check command to run inside container
@@ -170,4 +189,36 @@ print_connection_details() {
         print_info "  $1"
         shift
     done
+}
+
+# List of supported commands for database scripts
+SUPPORTED_COMMANDS="start|stop|restart|status|clean|logs|console|help|--help|-h"
+
+# Function to check if a string is a supported command
+# Args: $1 - Command to check
+# Returns: 0 if supported, 1 if not
+is_supported_command() {
+    local cmd="$1"
+    case "$cmd" in
+        start|stop|restart|status|clean|logs|console|help|--help|-h)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# Function to parse and find command from arguments
+# Args: All command line arguments
+# Returns: The command found (or empty if none found)
+find_command() {
+    for arg in "$@"; do
+        if is_supported_command "$arg"; then
+            echo "$arg"
+            return 0
+        fi
+    done
+    echo ""
+    return 1
 }
