@@ -74,3 +74,66 @@ setup() {
     [ "$status" -eq 1 ]
     [[ "$output" == *"Docker is not running"* ]]
 }
+
+@test "is_supported_command returns 0 for start command" {
+    run is_supported_command "start"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_supported_command returns 0 for stop command" {
+    run is_supported_command "stop"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_supported_command returns 0 for restart command" {
+    run is_supported_command "restart"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_supported_command returns 0 for status command" {
+    run is_supported_command "status"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_supported_command returns 0 for clean command" {
+    run is_supported_command "clean"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_supported_command returns 0 for logs command" {
+    run is_supported_command "logs"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_supported_command returns 0 for console command" {
+    run is_supported_command "console"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_supported_command returns 0 for help command" {
+    run is_supported_command "help"
+    [ "$status" -eq 0 ]
+}
+
+@test "is_supported_command returns 1 for invalid command" {
+    run is_supported_command "invalid"
+    [ "$status" -eq 1 ]
+}
+
+@test "find_command finds start in arguments" {
+    run find_command "--port" "5432" "start"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "start" ]]
+}
+
+@test "find_command finds console in arguments" {
+    run find_command "--debug" "console" "--port" "5432"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "console" ]]
+}
+
+@test "find_command returns empty for no command" {
+    run find_command "--port" "5432" "--name" "test"
+    [ "$status" -eq 1 ]
+    [ -z "$output" ]
+}

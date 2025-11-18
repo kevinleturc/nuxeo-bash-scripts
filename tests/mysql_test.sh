@@ -40,6 +40,7 @@ setup() {
     [[ "$output" == *"status"* ]]
     [[ "$output" == *"clean"* ]]
     [[ "$output" == *"logs"* ]]
+    [[ "$output" == *"console"* ]]
 }
 
 @test "docker-run-mysql help shows options" {

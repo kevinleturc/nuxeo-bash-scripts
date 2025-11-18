@@ -97,6 +97,9 @@ docker-run-postgresql clean
 
 # View logs
 docker-run-postgresql logs
+
+# Start and follow logs (console mode)
+docker-run-postgresql console
 ```
 
 The same commands work for other databases (replace `docker-run-postgresql` with `docker-run-mysql` or `docker-run-mongodb`).
@@ -138,7 +141,24 @@ Each database script follows a common pattern:
 - Container naming: `nuxeo-{database}-dev`
 - Data persistence: Docker volumes for data persistence
 - Configuration: Command-line options for customization
-- Commands: start, stop, restart, status, clean, logs
+- Commands: start, stop, restart, status, clean, logs, console
+
+### Console Command
+
+The `console` command is a convenient way to start a database and immediately follow its logs. This is particularly useful during development when you want to start a database and monitor its output in one step:
+
+```bash
+# Start PostgreSQL and follow logs
+docker-run-postgresql console
+
+# Start MySQL and follow logs
+docker-run-mysql console
+
+# Start MongoDB and follow logs
+docker-run-mongodb console
+```
+
+Press `Ctrl+C` to exit the log following (the database will continue running in the background).
 
 ### Code Organization
 
@@ -149,6 +169,7 @@ The repository uses a modular structure:
   - Docker availability checks
   - Container lifecycle management (stop, status, clean, logs)
   - Health check utilities
+  - Command validation and parsing (factorized across all scripts)
 
 This modular approach reduces code duplication and makes maintenance easier.
 
